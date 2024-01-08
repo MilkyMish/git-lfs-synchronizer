@@ -1,6 +1,7 @@
 ﻿
 using git_lfs_synchronizer.Configuration;
 using git_lfs_synchronizer.Configuration.Models;
+using git_lfs_synchronizer.Controllers;
 using git_lfs_synchronizer.Controllers.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
@@ -15,13 +16,15 @@ namespace git_lfs_synchronizer.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly LfsService _lfsService;
+        private readonly ILogger<ServerController> _logger;
 
-        public ClientService(MainConfiguration config, IHttpClientFactory httpClientFactory, JsonSerializerOptions jsonSerializerOptions, LfsService lfsService)
+        public ClientService(MainConfiguration config, IHttpClientFactory httpClientFactory, JsonSerializerOptions jsonSerializerOptions, LfsService lfsService, ILogger<ServerController> logger)
         {
             _config = config;
             _httpClientFactory = httpClientFactory;
             _serializerOptions = jsonSerializerOptions;
             _lfsService = lfsService;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -75,6 +78,7 @@ namespace git_lfs_synchronizer.Services
                 throw new Exception("Failed to deserialize fetch fileNames response");
             }
 
+            _logger.LogInformation("Fetched files from remote server");
             return reposResponse;
         }
 
@@ -94,10 +98,12 @@ namespace git_lfs_synchronizer.Services
 
                     var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "/file", getFileParameters!);
 
+                    _logger.LogInformation("Downloading missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
+
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
                     var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
 
-                    var savePath = Path.Combine(localRepo.Path, missingFile[..2], missingFile.Substring(2, 2), missingFile);
+                    var savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
                     _lfsService.SaveFile(savePath, missingFile, fileStream);
                 }
             }
@@ -105,6 +111,8 @@ namespace git_lfs_synchronizer.Services
 
         private List<RepoResponse> FindMissingFiles(IGrouping<string, RepoConfig> repos, List<RepoResponse>? reposResponse)
         {
+            bool missingFilesFound = false;
+
             var reposWithMissingFiles = new List<RepoResponse>();
 
             foreach (var remoteRepo in reposResponse)
@@ -120,10 +128,18 @@ namespace git_lfs_synchronizer.Services
                     if (!localFiles.Contains(remoteFile))
                     {
                         missedFiles.Add(remoteFile);
+                        _logger.LogInformation("Found missing file {name} in {repo}", remoteFile, remoteRepo.Name);
+                        missingFilesFound = true;
                     }
                 }
 
                 reposWithMissingFiles.Add(new(localRepo.Name, missedFiles));
+            }
+
+            if (!missingFilesFound)
+            {
+                _logger.LogWarning("Missing files not found! Check your config file, maybe you forgot to add a repo");
+                Environment.Exit(1);
             }
 
             return reposWithMissingFiles;

@@ -30,9 +30,10 @@ namespace git_lfs_synchronizer.Services
 
         public void SaveFile(string path, string fileName, Stream stream)
         {
-            if (!Directory.Exists(path))
+            var directoryPath = path.Replace(fileName, string.Empty);
+            if (!Directory.Exists(directoryPath))
             {
-                Directory.CreateDirectory(path);
+                Directory.CreateDirectory(directoryPath);
             }
 
             using (var fileStream = File.Create(path))

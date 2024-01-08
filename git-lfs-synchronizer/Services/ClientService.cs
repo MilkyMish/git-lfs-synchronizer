@@ -54,14 +54,14 @@ namespace git_lfs_synchronizer.Services
         {
             var parameters = new[]
             {
-                   new KeyValuePair<string,string>("repoName", new StringValues(repos.Select(r => r.Name).ToArray())!)
+                   new KeyValuePair<string,string>("repoNames", new StringValues(repos.Select(r => r.Name).ToArray())!)
             };
 
             client.BaseAddress = new Uri(repos.Key);
 
-            var fetchUrl = QueryHelpers.AddQueryString(client.BaseAddress + "/fileNames", parameters!);
+            var fetchUrl = QueryHelpers.AddQueryString(client.BaseAddress + "fileNames", parameters!);
 
-            var response = await client.PostAsync(fetchUrl, null, stoppingToken);
+            var response = await client.GetAsync(fetchUrl, stoppingToken);
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -94,7 +94,7 @@ namespace git_lfs_synchronizer.Services
 
                     var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "/file", getFileParameters!);
 
-                    var getFileResponse = await client.PostAsync(getFileUrl, null, stoppingToken);
+                    var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
                     var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
 
                     var savePath = Path.Combine(localRepo.Path, missingFile[..2], missingFile.Substring(2, 2), missingFile);

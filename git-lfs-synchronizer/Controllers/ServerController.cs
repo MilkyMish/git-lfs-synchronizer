@@ -32,8 +32,9 @@ namespace git_lfs_synchronizer.Controllers
 
                 var lfsFileNames = _lfsService.GetLfsFileNames(config.Repos.First(r => r.Name == repoName).Path);
                 repos.Add(new RepoResponse(repoName, lfsFileNames.ToList()));
+                _logger.Log(LogLevel.Information, "Fetched {count} files for {repoName} repo", lfsFileNames.Count(), repoName);
             }
-
+            
             return Ok(repos);
         }
 
@@ -44,10 +45,12 @@ namespace git_lfs_synchronizer.Controllers
 
             try
             {
+                _logger.LogInformation("Uploading {fileName} file...", fileName);
                 return File(await _lfsService.GetLfsFile(repoPath, fileName), "application/octet-stream");
             }
             catch (FileNotFoundException)
             {
+                _logger.LogWarning("File {fileName} not found", fileName);
                 NotFound(fileName);
             }
 

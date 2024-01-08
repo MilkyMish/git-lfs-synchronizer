@@ -32,19 +32,20 @@ var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
     }
 };
 
+builder.Services.AddSingleton(serializerOptions);
 builder.Services.AddSingleton<LfsService>();
 builder.Services.AddHostedService<ClientService>();
 
 
-/*builder.Services.AddHttpClient("GitLfsSynchronizerClient", client =>
+builder.Services.AddHttpClient("GitLfsSynchronizerClient", client =>
 {
-    client.BaseAddress = uriBuilder.Uri;
-});*/
+    var uriBuilder = new UriBuilder(config.Repos.First().Url)
+    {
+        Scheme = Uri.UriSchemeHttp
+    };
 
-/*builder.Services.AddHttpClient("GitLfsSynchronizerClient", client =>
-{
     client.BaseAddress = uriBuilder.Uri;
-});*/
+});
 
 builder.Services.AddEndpointsApiExplorer();
 

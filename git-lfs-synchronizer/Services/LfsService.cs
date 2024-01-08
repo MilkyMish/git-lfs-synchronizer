@@ -1,5 +1,4 @@
 ﻿using git_lfs_synchronizer.Models;
-using System.Linq;
 
 namespace git_lfs_synchronizer.Services
 {
@@ -11,12 +10,11 @@ namespace git_lfs_synchronizer.Services
         public IEnumerable<string> GetLfsFileNames(string path)
         {
             var lfsObjectsPath = Path.Combine(path, LfsObjectsDirectory);
-            var objectsDirectory = new DirectoryInfo(lfsObjectsPath);
-            var files = GetFilesFromSubDir(objectsDirectory);
+            var files = Directory.GetFiles(lfsObjectsPath, "*", SearchOption.AllDirectories);
 
             UpdateRepos(path, files);
 
-            return files.Select(f => f.Name);
+            return files.Select(f => Path.GetFileName(f));
         }
 
         public async Task<byte[]> GetLfsFile(string repoPath, string fileName)
@@ -44,52 +42,18 @@ namespace git_lfs_synchronizer.Services
             }
         }
 
-        private void UpdateRepos(string path, FileInfo[] files)
+        private void UpdateRepos(string path, IEnumerable<string> files)
         {
             if (_repos.Any(r => r.Path == path))
             {
                 var repo = _repos.First(r => r.Path == path);
 
-                repo.LfsFiles = files.ToDictionary(f => f.Name, f => f.FullName);
+                repo.LfsFiles = files.ToDictionary(f => Path.GetFileName(f), f => f);
             }
             else
             {
-                _repos.Add(new(path, files.ToDictionary(f => f.Name, f => f.FullName)));
+                _repos.Add(new(path, files.ToDictionary(f => Path.GetFileName(f), f => f)));
             }
-        }
-
-        private static FileInfo[] GetFilesFromSubDir(DirectoryInfo dir)
-        {
-            if (dir.GetDirectories().Any())
-            {
-                foreach (var subDir in dir.GetDirectories())
-                {
-                    GetFilesFromSubDir(subDir);
-                }
-            }
-            else
-            {
-                return dir.GetFiles();
-            }
-
-            return Array.Empty<FileInfo>();
-        }
-
-        private static FileInfo[] GetFilesFromSubDir(DirectoryInfo dir, IEnumerable<string> fileNames)
-        {
-            if (dir.GetDirectories().Any())
-            {
-                foreach (var subDir in dir.GetDirectories())
-                {
-                    GetFilesFromSubDir(subDir);
-                }
-            }
-            else
-            {
-                return dir.GetFiles().Where(f => fileNames.Contains(f.Name)).ToArray();
-            }
-
-            return Array.Empty<FileInfo>();
         }
     }
 }

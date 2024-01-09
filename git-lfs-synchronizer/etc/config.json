@@ -2,7 +2,7 @@
   "isServer": false,
   "repos": [
     {
-      "url": "http://26.58.143.118:3000/toR/cock.git",
+      "url": "http://26.58.143.118:5000",
       "name": "cock",
       "path": "D:\\Repositories\\cock"
     }

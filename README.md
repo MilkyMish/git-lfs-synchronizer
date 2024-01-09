@@ -17,7 +17,7 @@ This app is workaround for that problem.
 You execute this app in **server-mode** on machine with lfs server.  
 If client have got such problem, he executes this app in **client-mode** and the app requests lfs files list from server, if some of them missing, then app downloads missing files and that's it.
 
-## Requirments 
+## Requirements 
 Download and install [dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Configuration

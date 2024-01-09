@@ -6,10 +6,12 @@ If you've got such exception
 ```
 Downloading [filePath].fbx (1.5 MB)
 Error downloading object: [fileName].fbx (e2d9199): 
-Smudge error: error opening media file: open Z:\[repo].git\lfs\objects\e2\d9\e2d91991d416e764ee29b7da43f6d94e29d9be1c9e8eadf72b69a9699c832fc7: The system cannot find the file specified.
+Smudge error: error opening media file: open Z:\[repo]\.git\lfs\objects\e2\d9\e2d91991d416e764ee29b7da43f6d94e29d9be1c9e8eadf72b69a9699c832fc7: The system cannot find the file specified.
 ```  
 
 and `git lfs fetch --all` does not help
+
+and lfs path in .git\.config is correct
 
 This app is workaround for that problem.
 

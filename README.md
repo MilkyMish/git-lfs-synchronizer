@@ -21,13 +21,14 @@ If client have got such problem, he executes this app in **client-mode** and the
 Download and install [dotnet 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Configuration
-Config is located in `etc/config.json`
+Config is located in `etc/config.json`  
+Example:  
 ```json
 {
   "isServer": false,
   "repos": [
     {
-      "url": "http://26.58.143.118:3000",
+      "url": "http://26.58.143.118:5000",
       "name": "cock",
       "path": "D:\\Repositories\\cock"
     }
@@ -43,7 +44,7 @@ Config is located in `etc/config.json`
 
 ## Execution
 Configure `etc/config.json` on client and server sides. Then:
-On server side run `dotnet run --urls "http://[server address in using network]:[open port]/"` in git-lfs-synchronizer directory
+On server side run `dotnet run --urls "http://[server address in using network]:[open port]/"` in git-lfs-synchronizer directory  
 Example:
 ```
 dotnet run --urls "http://26.58.143.118:5000"

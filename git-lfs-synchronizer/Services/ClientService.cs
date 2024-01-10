@@ -51,6 +51,8 @@ namespace git_lfs_synchronizer.Services
 
                 await RequestMissingFiles(client, repos, reposWithMissingFiles, stoppingToken);
             }
+
+            Environment.Exit(0);
         }
 
         private async Task<List<RepoResponse>?> FetchRemoteFiles(HttpClient client, IGrouping<string, RepoConfig> repos, CancellationToken stoppingToken)
@@ -87,9 +89,11 @@ namespace git_lfs_synchronizer.Services
             foreach (var repoWithMissingFiles in reposWithMissingFiles)
             {
                 var localRepo = repos.First(r => r.Name == repoWithMissingFiles.Name);
+                var fileNumber = 1;
 
                 foreach (var missingFile in repoWithMissingFiles.LfsFileNames)
                 {
+                    fileNumber++;
                     var getFileParameters = new[]
                     {
                             new KeyValuePair<string,string>("repoName", repoWithMissingFiles.Name),
@@ -98,13 +102,15 @@ namespace git_lfs_synchronizer.Services
 
                     var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "/file", getFileParameters!);
 
-                    _logger.LogInformation("Downloading missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
+                    _logger.LogDebug("Downloading missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
 
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
                     var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
 
                     var savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
                     _lfsService.SaveFile(savePath, missingFile, fileStream);
+
+                    _logger.LogInformation("Saved {number} file out of {total} in repo {name}",fileNumber, repoWithMissingFiles.LfsFileNames.Count, localRepo.Name);
                 }
             }
         }
@@ -134,13 +140,17 @@ namespace git_lfs_synchronizer.Services
                 }
 
                 reposWithMissingFiles.Add(new(localRepo.Name, missedFiles));
+
+                _logger.LogWarning("Found {count} missing files in repo {name}!", missedFiles.Count, localRepo.Name);
             }
+
 
             if (!missingFilesFound)
             {
                 _logger.LogWarning("Missing files not found! Check your config file, maybe you forgot to add a repo");
                 Environment.Exit(1);
             }
+
 
             return reposWithMissingFiles;
         }

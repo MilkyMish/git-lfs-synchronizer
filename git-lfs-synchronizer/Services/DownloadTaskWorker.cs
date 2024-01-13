@@ -10,6 +10,7 @@ namespace git_lfs_synchronizer.Services
         private readonly DownloadsManager _downloadsManager;
         private readonly ILogger<DownloadTaskWorker> _logger;
         private readonly MainConfiguration _config;
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public DownloadTaskWorker(DownloadsManager downloadsManager, ILogger<DownloadTaskWorker> logger, MainConfiguration mainConfiguration)
         {
@@ -20,22 +21,30 @@ namespace git_lfs_synchronizer.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested && !_config.IsServer)
+            if (_config.IsServer)
             {
-                var listener = new TcpListener(IPAddress.Any, _config.TcpPort);  // local IP to listen at, do not change
+                return;
+            }
+
+            var listener = new TcpListener(IPAddress.Any, _config.TcpPort);  // local IP to listen at, do not change
+            listener.Start();
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await _semaphore.WaitAsync();
                 try
                 {
                     var downloadTask = await _downloadsManager.GetTaskFromQueueAsync(stoppingToken);
                     _logger.LogInformation("Downloading {SavePath} ...", downloadTask.SavePath);
 
-                    listener.Start();
+                    CreateDirectory(downloadTask.SavePath);
 
                     using (var client = await listener.AcceptTcpClientAsync(stoppingToken))
                     using (var networkStream = client.GetStream())
                     using (var fileStream = new FileStream(downloadTask.SavePath, FileMode.Create, FileAccess.Write))
                     {
                         await networkStream.CopyToAsync(fileStream, stoppingToken);
-                        _logger.LogInformation("Downloaded {SavePath}",  downloadTask.SavePath);
+                        _logger.LogInformation("Downloaded {SavePath}", downloadTask.SavePath);
                     }
                 }
                 catch (Exception e)
@@ -43,7 +52,16 @@ namespace git_lfs_synchronizer.Services
                     _logger.LogError(e.Message);
                     throw;
                 }
+                finally { _semaphore.Release(); }
             }
+        }
+
+        private static void CreateDirectory(string path)
+        {
+            var fileName = Path.GetFileName(path);
+            var directoryPath = path.Replace(fileName, string.Empty);
+
+            Directory.CreateDirectory(directoryPath);
         }
     }
 }

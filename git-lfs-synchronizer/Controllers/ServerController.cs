@@ -53,10 +53,12 @@ namespace git_lfs_synchronizer.Controllers
 
             if (_lfsService.CheckIsFileBig(repoPath, fileName, _config.TcpFileSizeMb))
             {
+                _logger.LogInformation("Sending big file {name} for repo {repo} to {address}", fileName, repoName, ipAddress);
                 await _uploadsManager.AddTaskToQueue(new UploadTask(ipAddress, repoPath, fileName));
                 return Ok();
             }
 
+            _logger.LogInformation("Sent small file {name} for repo {repo} to {address}", fileName, repoName, ipAddress);
             return File(await _lfsService.GetLfsFileBytes(repoPath, fileName), "application/octet-stream");
         }
     }

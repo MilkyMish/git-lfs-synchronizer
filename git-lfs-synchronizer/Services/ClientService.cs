@@ -92,11 +92,12 @@ namespace git_lfs_synchronizer.Services
             foreach (var repoWithMissingFiles in reposWithMissingFiles)
             {
                 var localRepo = repos.First(r => r.Name == repoWithMissingFiles.Name);
-                var fileNumber = 1;
+                var fileCount = 1;
+                var bigFilesCount = 0;
 
                 foreach (var missingFile in repoWithMissingFiles.LfsFileNames)
                 {
-                    fileNumber++;
+                    fileCount++;
                     var getFileParameters = new[]
                     {
                             new KeyValuePair<string,string>("repoName", repoWithMissingFiles.Name),
@@ -116,19 +117,28 @@ namespace git_lfs_synchronizer.Services
                         continue;
                     }
 
-                    if (getFileResponse.IsSuccessStatusCode && getFileResponse.Content.Headers.ContentType?.MediaType == "application/octet-stream")
+                    if (IsSmallFile(getFileResponse))
                     {
                         var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
                         _lfsService.SaveFile(savePath, missingFile, fileStream);
+                        _logger.LogDebug("Saved small missing file {name} for {repo}", missingFile, repoWithMissingFiles.Name);
                     }
 
                     if (getFileResponse.IsSuccessStatusCode)
                     {
+                        bigFilesCount++;
                         await _downloadsManager.AddTaskToQueue(new DownloadTask(savePath));
                         _logger.LogDebug("Requested missing file {name} for {repo} added to queue", missingFile, repoWithMissingFiles.Name);
                     }
                 }
+
+                _logger.LogInformation("Saved {count} files for {repo}. {bigCount} cound of big files", fileCount, localRepo.Name, bigFilesCount);
             }
+        }
+
+        private static bool IsSmallFile(HttpResponseMessage getFileResponse)
+        {
+            return getFileResponse.IsSuccessStatusCode && getFileResponse.Content.Headers.ContentType?.MediaType == "application/octet-stream";
         }
 
         private List<RepoResponse> FindMissingFiles(IGrouping<string, RepoConfig> repos, List<RepoResponse> reposResponse)

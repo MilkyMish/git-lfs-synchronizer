@@ -39,14 +39,14 @@ Example:
   ]
 }
 ```
-* set isServer = true if this app will be sending missing files
-* you can add multiple repos to sync lfs
-* set url with port of server where app is executed
-* set **the same name** of repo in client and server app
-* set local path to repo (directory must have .git folder), don't forget double '\' if windows
-* url is mandatory if isServer = false
-* tcpFileSizeMb is size of file in megabytes. If file is bigger than tcpFileSizeMb then it will be sent by tcp connection. Mandatory for server mode.
-* tcpPort port of tcp connection for sending big files
+* set isServer = true if this app will be sending missing files;
+* you can add multiple repos to sync lfs;
+* set url with port of server where app is executed;
+* set **the same name** of repo in client and server app;
+* set local path to repo (directory must have .git folder), don't forget double '\' if windows;
+* url is mandatory if isServer = false;
+* tcpFileSizeMb is size of file in megabytes. If file is bigger than tcpFileSizeMb then it will be sent by tcp connection. Mandatory for server mode;
+* tcpPort port of tcp connection for sending big files.
 
 ## Execution
 Configure `etc/config.json` on client and server sides. Then:

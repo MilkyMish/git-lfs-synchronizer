@@ -17,30 +17,15 @@ namespace git_lfs_synchronizer.Services
             return files.Select(f => Path.GetFileName(f));
         }
 
-        public async Task<byte[]> GetLfsFile(string repoPath, string fileName)
+        public FileStream GetLfsFile(string repoPath, string fileName)
         {
             if (_repos.Any(r => r.Path == repoPath) && _repos.First(r => r.Path == repoPath).LfsFiles.ContainsKey(fileName))
             {
                 var filePath = _repos.First(r => r.Path == repoPath).LfsFiles[fileName];
-                return await File.ReadAllBytesAsync(filePath);
+                return new FileStream(filePath, FileMode.Open, FileAccess.Read);
             }
 
             throw new FileNotFoundException(fileName);
-        }
-
-        public void SaveFile(string path, string fileName, Stream stream)
-        {
-            var directoryPath = path.Replace(fileName, string.Empty);
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-
-            using (var fileStream = File.Create(path))
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-                stream.CopyTo(fileStream);
-            }
         }
 
         private void UpdateRepos(string path, IEnumerable<string> files)

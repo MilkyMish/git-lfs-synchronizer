@@ -3,6 +3,7 @@ using git_lfs_synchronizer.Configuration;
 using git_lfs_synchronizer.Configuration.Models;
 using git_lfs_synchronizer.Controllers;
 using git_lfs_synchronizer.Controllers.Models;
+using git_lfs_synchronizer.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using System.Net;
@@ -17,14 +18,16 @@ namespace git_lfs_synchronizer.Services
         private readonly JsonSerializerOptions _serializerOptions;
         private readonly LfsService _lfsService;
         private readonly ILogger<ServerController> _logger;
+        private readonly DownloadsManager _downloadsManager;
 
-        public ClientService(MainConfiguration config, IHttpClientFactory httpClientFactory, JsonSerializerOptions jsonSerializerOptions, LfsService lfsService, ILogger<ServerController> logger)
+        public ClientService(MainConfiguration config, IHttpClientFactory httpClientFactory, JsonSerializerOptions jsonSerializerOptions, LfsService lfsService, ILogger<ServerController> logger, DownloadsManager downloadsManager)
         {
             _config = config;
             _httpClientFactory = httpClientFactory;
             _serializerOptions = jsonSerializerOptions;
             _lfsService = lfsService;
             _logger = logger;
+            _downloadsManager = downloadsManager;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -47,12 +50,12 @@ namespace git_lfs_synchronizer.Services
             {
                 List<RepoResponse>? reposResponse = await FetchRemoteFiles(client, repos, stoppingToken);
 
-                List<RepoResponse> reposWithMissingFiles = FindMissingFiles(repos, reposResponse);
-
-                await RequestMissingFiles(client, repos, reposWithMissingFiles, stoppingToken);
+                if (reposResponse != null && reposResponse.Any())
+                {
+                    List<RepoResponse> reposWithMissingFiles = FindMissingFiles(repos, reposResponse);
+                    await RequestMissingFiles(client, repos, reposWithMissingFiles, stoppingToken);
+                }
             }
-
-            Environment.Exit(0);
         }
 
         private async Task<List<RepoResponse>?> FetchRemoteFiles(HttpClient client, IGrouping<string, RepoConfig> repos, CancellationToken stoppingToken)
@@ -100,22 +103,23 @@ namespace git_lfs_synchronizer.Services
                             new KeyValuePair<string,string>("fileName", missingFile)
                         };
 
-                    var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "/file", getFileParameters!);
+                    var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "file", getFileParameters!);
 
-                    _logger.LogDebug("Downloading missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
+                    _logger.LogDebug("Requesting missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
+                    var savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
 
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
-                    var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
 
-                    var savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
-                    _lfsService.SaveFile(savePath, missingFile, fileStream);
-
-                    _logger.LogInformation("Saved {number} file out of {total} in repo {name}",fileNumber, repoWithMissingFiles.LfsFileNames.Count, localRepo.Name);
+                    if (getFileResponse != null && getFileResponse.IsSuccessStatusCode)
+                    {
+                        await _downloadsManager.AddTaskToQueue(new DownloadTask(savePath));
+                        _logger.LogDebug("Requested missing file {name} for {repo} added to queue", missingFile, repoWithMissingFiles.Name);
+                    }
                 }
             }
         }
 
-        private List<RepoResponse> FindMissingFiles(IGrouping<string, RepoConfig> repos, List<RepoResponse>? reposResponse)
+        private List<RepoResponse> FindMissingFiles(IGrouping<string, RepoConfig> repos, List<RepoResponse> reposResponse)
         {
             bool missingFilesFound = false;
 

@@ -1,5 +1,6 @@
 {
   "isServer": false,
+  "tcpPort":  5656,
   "repos": [
     {
       "url": "http://26.58.143.118:5000",

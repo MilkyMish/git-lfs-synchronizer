@@ -32,7 +32,7 @@ namespace git_lfs_synchronizer.Services
                     var uploadTask = await _uploadsManager.GetTaskFromQueueAsync(stoppingToken);
 
                     _logger.LogInformation("Uploading {fileName} file to {ip}...", uploadTask.FileName, uploadTask.ClientAddress);
-                    using (var fileStream = _lfsService.GetLfsFile(uploadTask.RepoPath, uploadTask.FileName))
+                    using (var fileStream = _lfsService.GetLfsFileStream(uploadTask.RepoPath, uploadTask.FileName))
                     using (var client = new TcpClient())
                     {
                         await client.ConnectAsync(uploadTask.ClientAddress, _config.TcpPort);

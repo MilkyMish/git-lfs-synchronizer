@@ -110,7 +110,19 @@ namespace git_lfs_synchronizer.Services
 
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
 
-                    if (getFileResponse != null && getFileResponse.IsSuccessStatusCode)
+                    if (getFileResponse == null || !getFileResponse.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning($"Response is not successfull: {getFileResponse?.StatusCode}");
+                        continue;
+                    }
+
+                    if (getFileResponse.IsSuccessStatusCode && getFileResponse.Content.Headers.ContentType?.MediaType == "application/octet-stream")
+                    {
+                        var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
+                        _lfsService.SaveFile(savePath, missingFile, fileStream);
+                    }
+
+                    if (getFileResponse.IsSuccessStatusCode)
                     {
                         await _downloadsManager.AddTaskToQueue(new DownloadTask(savePath));
                         _logger.LogDebug("Requested missing file {name} for {repo} added to queue", missingFile, repoWithMissingFiles.Name);

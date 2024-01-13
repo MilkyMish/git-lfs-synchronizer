@@ -26,13 +26,13 @@ namespace git_lfs_synchronizer.Controllers
 
             foreach (var repoName in repoNames)
             {
-                if (!config.Repos.Any(r => r.Name == repoName))
+                if (!_config.Repos.Any(r => r.Name == repoName))
                 {
                     _logger.LogWarning("{repoName} is not found on server side! Check server side config or client config!", repoName);
                     continue;
                 }
 
-                var lfsFileNames = _lfsService.GetLfsFileNames(config.Repos.First(r => r.Name == repoName).Path);
+                var lfsFileNames = _lfsService.GetLfsFileNames(_config.Repos.First(r => r.Name == repoName).Path);
                 repos.Add(new RepoResponse(repoName, lfsFileNames.ToList()));
                 _logger.Log(LogLevel.Information, "Fetched {count} files for {repoName} repo", lfsFileNames.Count(), repoName);
             }
@@ -48,53 +48,16 @@ namespace git_lfs_synchronizer.Controllers
                 return BadRequest("Trying to connect to client app, not server. Check etc/config.json on server side, there must be isServer = true");
             }
 
-            var repoPath = config.Repos.First(r => r.Name == repoName).Path;
+            var repoPath = _config.Repos.First(r => r.Name == repoName).Path;
             string ipAddress = HttpContext.Request.Host.Host;
-            await _uploadsManager.AddTaskToQueue(new UploadTask(ipAddress, repoPath, fileName));
 
-            return Ok();
-            /*try
+            if (_lfsService.CheckIsFileBig(repoPath, fileName, _config.TcpFileSizeMb))
             {
-                _uploadsManager.AddTaskToQueue(new UploadTask())
-
-                Ok();
+                await _uploadsManager.AddTaskToQueue(new UploadTask(ipAddress, repoPath, fileName));
+                return Ok();
             }
-            catch (FileNotFoundException)
-            {
-                _logger.LogWarning("File {fileName} not found", fileName);
-                NotFound(fileName);
-            }*/
 
-            //return BadRequest("Something gone wrong...");
+            return File(await _lfsService.GetLfsFileBytes(repoPath, fileName), "application/octet-stream");
         }
-
-        /*        private string GetUserName(string ip)
-                {
-                    switch (ip)
-                    {
-                        case "26.58.143.118":
-                            return "MEERITS";
-                        case "26.96.147.169":
-                            return "KUX";
-                        case "26.202.79.18":
-                            return "GRINOG4";
-                        case "26.159.179.112":
-                            return "ANTIHYPE.MILKYMISH";
-                        case "26.117.145.233":
-                            return "CHUPA";
-                        default:
-                            return ip;
-                    }
-                }*/
-
-        /*
-         private async Task SendFiles()
-{
-    string fileName = "CCCCCC.zip"; //It has size greater than 2 GB
-    string filePath = @"C:\Users\CCCCCC\Downloads\";
-
-    using (var fileStream = new FileStream(Path.Combine(filePath, fileName), FileMode.Open, FileAccess.Read))
-}
-         */
     }
 }

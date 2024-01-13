@@ -56,5 +56,6 @@ Example:
 dotnet run --urls "http://26.58.143.118:5000"
 ```
 On client side run `dotnet run` in git-lfs-synchronizer directory
+If the port is occupied, you can specify port as shown in example above  
 
 If everything configured well and there are no problems with network, then the app sync all missing lfs files

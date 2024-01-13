@@ -34,7 +34,11 @@ var serializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 
 builder.Services.AddSingleton(serializerOptions);
 builder.Services.AddSingleton<LfsService>();
+builder.Services.AddSingleton<DownloadsManager>();
+builder.Services.AddSingleton<UploadsManager>();
 builder.Services.AddHostedService<ClientService>();
+builder.Services.AddHostedService<UploadTaskWorker>();
+builder.Services.AddHostedService<DownloadTaskWorker>();
 
 
 builder.Services.AddHttpClient("GitLfsSynchronizerClient", client =>

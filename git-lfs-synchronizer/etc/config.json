@@ -1,10 +1,12 @@
 {
-  "isServer": false,
+  "tcpFileSizeMb": 5,
+  "tcpPort": 5656,
+  "isServer": true,
   "repos": [
     {
-      "url": "http://26.58.143.118:5000",
+      "url": "http://localhost:5000",
       "name": "cock",
-      "path": "D:\\Repositories\\cock"
+      "path": "D:\\test git server"
     }
   ]
 }

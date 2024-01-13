@@ -132,7 +132,7 @@ namespace git_lfs_synchronizer.Services
                     }
                 }
 
-                _logger.LogInformation("Saved {count} files for {repo}. {bigCount} cound of big files", fileCount, localRepo.Name, bigFilesCount);
+                _logger.LogInformation("Saved {count} files for {repo}. {bigCount} count of big files that can be still downloading...", fileCount, localRepo.Name, bigFilesCount);
             }
         }
 

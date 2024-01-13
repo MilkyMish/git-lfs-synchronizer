@@ -13,7 +13,6 @@ namespace git_lfs_synchronizer.Controllers
         private readonly LfsService _lfsService = lfsService;
         private readonly UploadsManager _uploadsManager = uploadsManager;
 
-
         [HttpGet("fileNames")]
         public IActionResult FetchFileNames([FromQuery] string[] repoNames)
         {

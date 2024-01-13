@@ -1,7 +1,5 @@
 ﻿using git_lfs_synchronizer.Configuration;
 using System.Net.Sockets;
-using System.Net;
-using System.Threading;
 
 namespace git_lfs_synchronizer.Services
 {
@@ -11,7 +9,6 @@ namespace git_lfs_synchronizer.Services
         private readonly ILogger<UploadTaskWorker> _logger;
         private readonly MainConfiguration _config;
         private readonly LfsService _lfsService;
-        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public UploadTaskWorker(UploadsManager uploadsManager, ILogger<UploadTaskWorker> logger, MainConfiguration mainConfiguration, LfsService lfsService)
         {
@@ -25,13 +22,12 @@ namespace git_lfs_synchronizer.Services
         {
             while (!stoppingToken.IsCancellationRequested && _config.IsServer)
             {
-                await _semaphore.WaitAsync();
 
                 try
                 {
                     var uploadTask = await _uploadsManager.GetTaskFromQueueAsync(stoppingToken);
 
-                    _logger.LogInformation("Uploading {fileName} file to {ip}...", uploadTask.FileName, uploadTask.ClientAddress);
+                    _logger.LogInformation("Uploading big file {fileName} to {ip}...", uploadTask.FileName, uploadTask.ClientAddress);
                     using (var fileStream = _lfsService.GetLfsFileStream(uploadTask.RepoPath, uploadTask.FileName))
                     using (var client = new TcpClient())
                     {
@@ -39,7 +35,7 @@ namespace git_lfs_synchronizer.Services
                         using (var netStream = client.GetStream())
                         {
                             await fileStream.CopyToAsync(netStream);
-                            _logger.LogInformation($"Uploaded {uploadTask.FileName}");
+                            _logger.LogDebug("Uploaded big file {fileName} to {ip}", uploadTask.FileName, uploadTask.ClientAddress);
                         }
                     }
                 }
@@ -48,7 +44,6 @@ namespace git_lfs_synchronizer.Services
                     _logger.LogError(e.Message);
                     throw;
                 }
-                finally { _semaphore.Release(); }
             }
         }
     }

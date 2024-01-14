@@ -1,5 +1,7 @@
 ﻿using git_lfs_synchronizer.Configuration;
 using System.Net.Sockets;
+using System.Net;
+using System.Threading;
 
 namespace git_lfs_synchronizer.Services
 {
@@ -9,6 +11,7 @@ namespace git_lfs_synchronizer.Services
         private readonly ILogger<UploadTaskWorker> _logger;
         private readonly MainConfiguration _config;
         private readonly LfsService _lfsService;
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public UploadTaskWorker(UploadsManager uploadsManager, ILogger<UploadTaskWorker> logger, MainConfiguration mainConfiguration, LfsService lfsService)
         {
@@ -22,6 +25,7 @@ namespace git_lfs_synchronizer.Services
         {
             while (!stoppingToken.IsCancellationRequested && _config.IsServer)
             {
+                await _semaphore.WaitAsync();
 
                 try
                 {
@@ -44,6 +48,7 @@ namespace git_lfs_synchronizer.Services
                     _logger.LogError(e.Message);
                     throw;
                 }
+                finally { _semaphore.Release(); }
             }
         }
     }

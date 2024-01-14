@@ -10,6 +10,7 @@ namespace git_lfs_synchronizer.Services
         private readonly DownloadsManager _downloadsManager;
         private readonly ILogger<DownloadTaskWorker> _logger;
         private readonly MainConfiguration _config;
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         public DownloadTaskWorker(DownloadsManager downloadsManager, ILogger<DownloadTaskWorker> logger, MainConfiguration mainConfiguration)
         {
@@ -30,6 +31,7 @@ namespace git_lfs_synchronizer.Services
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                await _semaphore.WaitAsync();
                 try
                 {
                     var downloadTask = await _downloadsManager.GetTaskFromQueueAsync(stoppingToken);
@@ -50,6 +52,7 @@ namespace git_lfs_synchronizer.Services
                     _logger.LogError(e.Message);
                     throw;
                 }
+                finally { _semaphore.Release(); }
             }
         }
 

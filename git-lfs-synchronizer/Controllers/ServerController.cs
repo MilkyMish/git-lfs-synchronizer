@@ -48,7 +48,8 @@ namespace git_lfs_synchronizer.Controllers
             }
 
             var repoPath = _config.Repos.First(r => r.Name == repoName).Path;
-            string ipAddress = HttpContext.Request.Host.Host;
+            
+            string ipAddress = HttpContext.Connection.RemoteIpAddress.ToString();
 
             if (_lfsService.CheckIsFileBig(repoPath, fileName, _config.TcpFileSizeMb))
             {

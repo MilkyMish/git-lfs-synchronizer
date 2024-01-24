@@ -107,16 +107,8 @@ namespace git_lfs_synchronizer.Services
                     var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "file", getFileParameters!);
 
                     _logger.LogDebug("Requesting missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
-                    
-                    var savePath = string.Empty;
-                    if (localRepo.Path.Contains(".git") && !Directory.Exists(Path.Combine(localRepo.Path, ".git")))
-                    {
-                        savePath = Path.Combine(localRepo.Path, "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
-                    }
-                    else
-                    {
-                        savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
-                    }
+
+                    string savePath = GetSavePath(localRepo, missingFile);
 
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
 
@@ -144,6 +136,22 @@ namespace git_lfs_synchronizer.Services
 
                 _logger.LogInformation("Saved {count} files for {repo}. {bigCount} count of big files that can be still downloading...", fileCount, localRepo.Name, bigFilesCount);
             }
+        }
+
+        private static string GetSavePath(RepoConfig localRepo, string missingFile)
+        {
+            string? savePath;
+
+            if (localRepo.Path.Contains(".git") && !Directory.Exists(Path.Combine(localRepo.Path, ".git")))
+            {
+                savePath = Path.Combine(localRepo.Path, "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
+            }
+            else
+            {
+                savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
+            }
+
+            return savePath;
         }
 
         private static bool IsSmallFile(HttpResponseMessage getFileResponse)

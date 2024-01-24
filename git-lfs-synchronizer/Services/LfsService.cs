@@ -9,7 +9,19 @@ namespace git_lfs_synchronizer.Services
 
         public IEnumerable<string> GetLfsFileNames(string path)
         {
-            var lfsObjectsPath = string.Empty;
+            string lfsObjectsPath = GetLfsObjectPath(path);
+
+            var files = Directory.GetFiles(lfsObjectsPath, "*", SearchOption.AllDirectories);
+
+            UpdateRepos(path, files);
+
+            return files.Select(f => Path.GetFileName(f));
+        }
+
+        private static string GetLfsObjectPath(string path)
+        {
+            string? lfsObjectsPath;
+
             if (path.Contains(".git") && !Directory.Exists(Path.Combine(path, ".git")))
             {
                 lfsObjectsPath = Path.Combine(path, "lfs", "objects");
@@ -18,12 +30,8 @@ namespace git_lfs_synchronizer.Services
             {
                 lfsObjectsPath = Path.Combine(path, ".git", "lfs", "objects");
             }
-            
-            var files = Directory.GetFiles(lfsObjectsPath, "*", SearchOption.AllDirectories);
 
-            UpdateRepos(path, files);
-
-            return files.Select(f => Path.GetFileName(f));
+            return lfsObjectsPath;
         }
 
         public FileStream GetLfsFileStream(string repoPath, string fileName)

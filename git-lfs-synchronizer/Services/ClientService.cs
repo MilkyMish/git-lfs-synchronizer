@@ -107,7 +107,16 @@ namespace git_lfs_synchronizer.Services
                     var getFileUrl = QueryHelpers.AddQueryString(client.BaseAddress + "file", getFileParameters!);
 
                     _logger.LogDebug("Requesting missing file {name} for {repo}...", missingFile, repoWithMissingFiles.Name);
-                    var savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
+                    
+                    var savePath = string.Empty;
+                    if (localRepo.Path.Contains(".git") && !Directory.Exists(Path.Combine(localRepo.Path, ".git")))
+                    {
+                        savePath = Path.Combine(localRepo.Path, "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
+                    }
+                    else
+                    {
+                        savePath = Path.Combine(localRepo.Path, ".git", "lfs", "objects", missingFile[..2], missingFile.Substring(2, 2), missingFile);
+                    }
 
                     var getFileResponse = await client.GetAsync(getFileUrl, stoppingToken);
 

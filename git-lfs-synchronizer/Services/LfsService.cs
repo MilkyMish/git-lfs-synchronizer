@@ -5,12 +5,20 @@ namespace git_lfs_synchronizer.Services
     public class LfsService
     {
         private const int BytesInMegabyte = 1_000_000;
-        private readonly string _lfsObjectsDirectory = $".git{Path.DirectorySeparatorChar}lfs{Path.DirectorySeparatorChar}objects";
         private readonly List<Repo> _repos = new();
 
         public IEnumerable<string> GetLfsFileNames(string path)
         {
-            var lfsObjectsPath = Path.Combine(path, _lfsObjectsDirectory);
+            var lfsObjectsPath = string.Empty;
+            if (path.Contains(".git") && !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                lfsObjectsPath = Path.Combine(path, "lfs", "objects");
+            }
+            else
+            {
+                lfsObjectsPath = Path.Combine(path, ".git", "lfs", "objects");
+            }
+            
             var files = Directory.GetFiles(lfsObjectsPath, "*", SearchOption.AllDirectories);
 
             UpdateRepos(path, files);

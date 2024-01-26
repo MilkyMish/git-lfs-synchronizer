@@ -39,7 +39,7 @@ namespace git_lfs_synchronizer.Services
                         using (var netStream = client.GetStream())
                         {
                             await fileStream.CopyToAsync(netStream);
-                            _logger.LogDebug("Uploaded big file {fileName} to {ip}", uploadTask.FileName, uploadTask.ClientAddress);
+                            _logger.LogInformation("Uploaded big file {fileName} to {ip}", uploadTask.FileName, uploadTask.ClientAddress);
                         }
                     }
                 }

@@ -122,7 +122,7 @@ namespace git_lfs_synchronizer.Services
                     {
                         var fileStream = await getFileResponse.Content.ReadAsStreamAsync();
                         _lfsService.SaveFile(savePath, missingFile, fileStream);
-                        _logger.LogDebug("Saved small missing file {name} for {repo}", missingFile, repoWithMissingFiles.Name);
+                        _logger.LogDebug("Saved small missing file {number} {name} for {repo}", fileCount, missingFile, repoWithMissingFiles.Name);
                         continue;
                     }
 

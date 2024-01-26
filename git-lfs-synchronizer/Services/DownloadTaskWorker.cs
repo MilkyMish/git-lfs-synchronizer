@@ -26,6 +26,8 @@ namespace git_lfs_synchronizer.Services
                 return;
             }
 
+            var downloadedCount = 1;
+
             var listener = new TcpListener(IPAddress.Any, _config.TcpPort);  // local IP to listen at, do not change
             listener.Start();
 
@@ -44,7 +46,7 @@ namespace git_lfs_synchronizer.Services
                     using (var fileStream = new FileStream(downloadTask.SavePath, FileMode.Create, FileAccess.Write))
                     {
                         await networkStream.CopyToAsync(fileStream, stoppingToken);
-                        _logger.LogInformation("Downloaded {SavePath}", downloadTask.SavePath);
+                        _logger.LogInformation("Downloaded big file {number} {SavePath}", downloadedCount++, downloadTask.SavePath);
                     }
                 }
                 catch (Exception e)
